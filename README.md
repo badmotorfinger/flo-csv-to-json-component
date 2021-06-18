@@ -138,5 +138,39 @@ public class CsvToJsonApp : IApp
 
 Right now this component does not do anything, so let's put in some logic to process the CSV file and also get the parameter values from our input.
 
-
+```csharp
+public async Task<ExternalAppResponse<ActionExecuteResponseData>> HandleActionExecute(Guid actionId, ExternalAppRequest<ActionExecuteRequestData> request)
+{
+    if (actionId != CsvToJsonApp.ActionId)
+    {
+        throw new Exception("Unknown action id: " + actionId);
+    }
+    
+    // Create logger
+    var logger = new AppLogger();
+    
+    // Read input parameters from other workflow components
+    var fileContents = request.Data.Parameters["file"]
+    var firstRowContainsHeadings = bool.Parse(request.Data.Parameters["firstRowContainsHeadings"])
+    var delimeter = request.Data.Parameters["delimeter"]
+    
+    // Convert the CSV file to JSON (this will be your own custom implementation
+    JsonElement resultDocument = Parser.CsvToJson(fileContents);
+    
+    // Log some info
+    logger.LogInformation("Process file successfuly");
+    
+    // Return the results for the next component in the workflow to process
+    return new ExternalAppResponse<ActionExecuteResponseData>
+    {
+        Data = new ActionExecuteResponseData
+        {
+            Succeeded = true,
+            NextStepUniqueName = request.Data.Step.NextStepUniqueNames.FirstOrDefault(),
+            OutputData = resultDocument,
+            Logs = logger.Logs
+        }
+    };
+}
+```
 
