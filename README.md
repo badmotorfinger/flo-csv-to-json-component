@@ -154,11 +154,11 @@ public async Task<ExternalAppResponse<ActionExecuteResponseData>> HandleActionEx
     var firstRowContainsHeadings = bool.Parse(request.Data.Parameters["firstRowContainsHeadings"])
     var delimeter = request.Data.Parameters["delimeter"]
     
-    // Convert the CSV file to JSON (this will be your own custom implementation
+    // Convert the CSV file to JSON (this will be your own custom implementation)
     JsonElement resultDocument = Parser.CsvToJson(fileContents);
     
     // Log some info
-    logger.LogInformation("Process file successfuly");
+    logger.LogInformation("Processed file successfuly");
     
     // Return the results for the next component in the workflow to process
     return new ExternalAppResponse<ActionExecuteResponseData>
@@ -173,4 +173,61 @@ public async Task<ExternalAppResponse<ActionExecuteResponseData>> HandleActionEx
     };
 }
 ```
+Once the core logic has been written, the next bit of code to write will define what the output looks like, or the schema. This will allow other components in the workflow to have knowledge on what the expected output will be.
+
+For our example, let's suppose the output (`OutputData`) is a JSON document formatted like so:
+
+```json
+{
+  "columns": [
+    "Name",
+    "Age"
+  ],
+  "rows": [
+    [ "Mary", "32"],
+    [ "Bob", "21" ]
+  ]
+}
+```
+For this, we need to define a new method as part of the `IApp` component.
+
+```csharp
+public async Task<ExternalAppResponse<ActionGetPossibleOutputsResponseData>> HandleActionGetPossibleOutputs(Guid actionId, ExternalAppRequest<ActionGetPossibleOutputsRequestData> request)
+{
+    if (actionId != CsvToJsonApp.ActionId)
+    {
+        throw new Exception("Unknown action id: " + actionId);
+    }
+
+    var outputSchema = new ExternalAppResponse<ActionGetPossibleOutputsResponseData>
+    {
+        Data = new ActionGetPossibleOutputsResponseData
+        {
+            StepValueDescriptors = new List<StepValueDescriptor>
+            {
+                new StepValueDescriptor
+                {
+                    Name = "Columns",
+                    Description = "A dynamically sized array of column names.",
+                    Path = "columns",
+                    Type = StepValueType.BuildArrayType(StepValueType.String) // An array of strings
+                },
+                new StepValueDescriptor
+                {
+                    Name = "Rows",
+                    Description = "A dynamically sized array of rows in a JSON formatted document.",
+                    Path = "rows",
+                    Type = StepValueType.BuildArrayType(StepValueType.BuildArrayType(StepValueType.String)) // An array of arrays of string data type
+                },
+            }
+        }
+    };
+    return await Task.FromResult(outputSchema);
+}
+```
+
+This allows workflow components to have autocomplete as shown here.
+<img width="310" alt="image" src="https://user-images.githubusercontent.com/441719/122848315-a68a7880-d34c-11eb-9edf-4b54e6de57d4.png">
+
+
 
