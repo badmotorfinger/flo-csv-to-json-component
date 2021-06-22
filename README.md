@@ -227,6 +227,7 @@ public async Task<ExternalAppResponse<ActionGetPossibleOutputsResponseData>> Han
 ```
 
 This allows workflow components to have autocomplete as shown here.
+
 <img width="310" alt="image" src="https://user-images.githubusercontent.com/441719/122848315-a68a7880-d34c-11eb-9edf-4b54e6de57d4.png">
 
 
